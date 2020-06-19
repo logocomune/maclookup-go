@@ -50,13 +50,13 @@ func main() {
 
 ```
 
-###Use custom timout
+### Use custom timout
 ```go
     client := maclookup.New()
     client.WithTimeout(10*time.Second) 
 ```
 
-###API Key
+### API Key
 Get an API Key [here](https://maclookup.app/api-v2/plans)
 ```go
     client := maclookup.New()
@@ -65,7 +65,7 @@ Get an API Key [here](https://maclookup.app/api-v2/plans)
 ```
 
 
-##Example
+## Example
 
 - [Get full info of a MAC](/example/lookup)  
 - [Get company name](/example/company-name)  
