@@ -10,7 +10,7 @@ import (
 
 const (
 	timeOut = 5 * time.Second
-	ua      = "MACLookupClient/1.0.0 (https://maclookup.app)"
+	ua      = "MACLookupClient-go/1.0.0 (https://maclookup.app)"
 
 	xRateLimit     = "X-RateLimit-Limit"
 	xRateRemaining = "X-RateLimit-Remaining"
