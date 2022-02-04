@@ -148,7 +148,7 @@ func TestClient_CompanyNameBadRequest(t *testing.T) {
 		w.Header().Add(xRateRemaining, "9")
 		w.Header().Add(xRateReset, fmt.Sprintf("%d", now.Unix()))
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, `MAC must be grater than 5 chars`)
+		fmt.Fprint(w, `MAC must be greater than 5 chars`)
 	}))
 
 	defer ts.Close()

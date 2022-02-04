@@ -132,7 +132,7 @@ func TestClient_LookupBadRequest(t *testing.T) {
 		w.Header().Add(xRateRemaining, "9")
 		w.Header().Add(xRateReset, fmt.Sprintf("%d", now.Unix()))
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, `{"success":false,"error":"MAC must be grater than 5 chars","errorCode":101,"moreInfo":"https://maclookup.app/api-v2/documentation"}`)
+		fmt.Fprintln(w, `{"success":false,"error":"MAC must be greater than 5 chars","errorCode":101,"moreInfo":"https://maclookup.app/api-v2/documentation"}`)
 	}))
 
 	defer ts.Close()
