@@ -24,7 +24,8 @@ func (c Client) getCompanyName(url string) (ResponseVendorName, error) {
 	var response ResponseVendorName
 
 	start := time.Now()
-	timeout, _ := context.WithTimeout(context.Background(), c.timeOut)
+	timeout, cancell := context.WithTimeout(context.Background(), c.timeOut)
+	defer cancell()
 
 	req, err := http.NewRequestWithContext(timeout, "GET", url, nil)
 	if err != nil {

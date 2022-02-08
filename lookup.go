@@ -25,7 +25,8 @@ func (c Client) getMacInfo(url string) (ResponseMACInfo, error) {
 	var response ResponseMACInfo
 
 	start := time.Now()
-	timeout, _ := context.WithTimeout(context.Background(), c.timeOut)
+	timeout, cancel := context.WithTimeout(context.Background(), c.timeOut)
+	defer cancel()
 
 	req, err := http.NewRequestWithContext(timeout, "GET", url, nil)
 	if err != nil {
