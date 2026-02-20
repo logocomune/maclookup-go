@@ -195,6 +195,33 @@ func TestClient_LookupBadResponse(t *testing.T) {
 	assert.True(t, errors.As(err, &e))
 }
 
+func TestClient_LookupUnexpectedStatusCode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, `Internal Server Error`)
+	}))
+	defer ts.Close()
+
+	client := New()
+	client.WithPrefixURI(ts.URL)
+	_, err := client.Lookup("000000")
+	assert.NotNil(t, err)
+
+	var e *HTTPClientError
+	assert.True(t, errors.As(err, &e))
+	assert.Contains(t, e.Error(), "500")
+}
+
+func TestClient_LookupInvalidURL(t *testing.T) {
+	client := New()
+	// A null byte in the URL causes http.NewRequestWithContext to fail.
+	_, err := client.getMacInfo("http://\x00invalid")
+	assert.NotNil(t, err)
+
+	var e *HTTPClientError
+	assert.True(t, errors.As(err, &e))
+}
+
 func ExampleClient_Lookup() {
 	//Prevent rate limits error
 	time.Sleep(time.Millisecond * 550)
@@ -208,7 +235,7 @@ func ExampleClient_Lookup() {
 	//{Found:true MacPrefix:000000 Company:XEROX CORPORATION Address:M/S 105-50C, WEBSTER NY 14580, US Country:US BlockStart:000000000000 BlockEnd:000000FFFFFF BlockSize:16777215 BlockType:MA-L Updated:2015-11-17 IsRand:false IsPrivate:false}
 }
 
-func ExampleClient_Lookup_NotFound() {
+func ExampleClient_Lookup_notFound() {
 	//Prevent rate limits error
 	time.Sleep(time.Millisecond * 550)
 

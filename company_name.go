@@ -3,14 +3,22 @@ package maclookup
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
 
-//CompanyName returns company name from API.
+// CompanyName queries the lightweight company-name endpoint of the
+// maclookup.app API and returns just the vendor name associated with the given
+// MAC address or prefix.
+//
+// mac may be supplied in any common notation (colon-separated, dash-separated,
+// dot-separated, or plain hex). Only the OUI/MA prefix portion is used.
+//
+// Possible error types: *HTTPClientError, *BadAPIRequest, *BadAPIKey,
+// *RateLimitsExceeded.
 func (c Client) CompanyName(mac string) (ResponseVendorName, error) {
 	url := c.prefixURI + apiMAC + cleanMac(mac) + companyNameSuffix
 	if c.apiKey != "" {
@@ -47,7 +55,7 @@ func (c Client) getCompanyName(url string) (ResponseVendorName, error) {
 		Reset:     parseTimeHeader(resp.Header, xRateReset),
 	}
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return response, &HTTPClientError{Err: err}
 	}

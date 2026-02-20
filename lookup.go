@@ -11,7 +11,14 @@ import (
 	"time"
 )
 
-//Lookup retrieve MAC information from API.
+// Lookup queries the maclookup.app API for full vendor registration data
+// associated with the given MAC address or prefix.
+//
+// mac may be supplied in any common notation (colon-separated, dash-separated,
+// dot-separated, or plain hex). Only the OUI/MA prefix portion is used.
+//
+// Possible error types: *HTTPClientError, *BadAPIRequest, *BadAPIKey,
+// *RateLimitsExceeded, *BadAPIResponse.
 func (c Client) Lookup(mac string) (ResponseMACInfo, error) {
 	url := c.prefixURI + apiMAC + cleanMac(mac)
 	if c.apiKey != "" {

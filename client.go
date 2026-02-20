@@ -17,6 +17,8 @@ const (
 	xRateReset     = "X-RateLimit-Reset"
 )
 
+// Client is the maclookup.app API client.
+// Create one with New() and optionally configure it with WithAPIKey, WithTimeout, or WithPrefixURI.
 type Client struct {
 	client    *http.Client
 	apiKey    string
@@ -24,7 +26,9 @@ type Client struct {
 	timeOut   time.Duration
 }
 
-//New creates a new client for maclookup.app API.
+// New creates a new Client for the maclookup.app API v2 using the default HTTP
+// client and a 5-second timeout. No API key is set by default; free-tier rate
+// limits apply until one is provided via WithAPIKey.
 func New() *Client {
 	client := http.DefaultClient
 
@@ -35,17 +39,21 @@ func New() *Client {
 	}
 }
 
-//WithAPIKey adds apiKey to client.
+// WithAPIKey sets the API key used for authenticated requests.
+// Obtain a key at https://maclookup.app/api-v2/plans.
 func (c *Client) WithAPIKey(apiKey string) {
 	c.apiKey = apiKey
 }
 
-//WithTimeout defines a new timeout value for every request.
+// WithTimeout overrides the per-request HTTP timeout (default: 5 s).
 func (c *Client) WithTimeout(timeout time.Duration) {
 	c.timeOut = timeout
 }
 
-//WithPrefixURI changes the default API prefix url.
+// WithPrefixURI replaces the default API base URL (https://api.maclookup.app).
+// Useful for testing or when routing through a proxy. If the supplied string
+// starts with an IP address (and no explicit scheme), http:// is used;
+// otherwise https:// is added when no scheme is present.
 func (c *Client) WithPrefixURI(prefixURI string) {
 	prefix := strings.TrimRight(prefixURI, "/")
 
@@ -61,13 +69,23 @@ func (c *Client) WithPrefixURI(prefixURI string) {
 	}
 }
 
+// isIP reports whether host (without scheme) is an IP address, optionally
+// followed by a port (host:port) or path (host/path). Two or more colons mean
+// IPv6.
 func isIP(host string) bool {
-	h := strings.Split(host, ":")
-	if len(h) <= 2 {
-		h = strings.Split(h[0], "/")
-		return net.ParseIP(h[0]) != nil
+	colons := strings.Count(host, ":")
+	if colons > 1 {
+		// IPv6 literal — pass as-is to net.ParseIP.
+		return net.ParseIP(host) != nil
 	}
-
+	if colons == 1 {
+		// Strip port suffix.
+		host = host[:strings.IndexByte(host, ':')]
+	}
+	// Strip path suffix.
+	if i := strings.IndexByte(host, '/'); i >= 0 {
+		host = host[:i]
+	}
 	return net.ParseIP(host) != nil
 }
 
@@ -80,9 +98,14 @@ func parseIntHeader(header http.Header, property string) int64 {
 	return parseInt
 }
 
+// parseLimit extracts the first numeric token from an X-RateLimit-Limit header
+// value, which may carry an optional policy string (e.g. "2, 2;window=1").
+// Using IndexByte avoids the slice allocation of strings.Split.
 func parseLimit(limit string) int64 {
-	l := strings.Split(limit, ", ")
-	parseInt, err := strconv.ParseInt(l[0], 10, 64)
+	if i := strings.IndexByte(limit, ','); i >= 0 {
+		limit = limit[:i]
+	}
+	parseInt, err := strconv.ParseInt(limit, 10, 64)
 
 	if err != nil {
 		return -1
@@ -100,27 +123,37 @@ func parseTimeHeader(header http.Header, property string) time.Time {
 	return time.Unix(parseInt, 0)
 }
 
+// cleanMac normalises a MAC address string to a bare uppercase hex prefix of
+// the appropriate length (6, 7 or 9 chars) by stripping separators (:, ., -,
+// space) in a single pass over the bytes. A fixed [9]byte stack buffer avoids
+// heap allocation for the common case.
 func cleanMac(mac string) string {
-	chars := []string{":", ".", "-", " "}
-	m := strings.TrimSpace(mac)
+	var buf [9]byte
+	n := 0
 
-	for _, c := range chars {
-		m = strings.Replace(m, c, "", -1)
+	for i := 0; i < len(mac); i++ {
+		c := mac[i]
+		switch {
+		case c == ':' || c == '.' || c == '-' || c == ' ':
+			continue
+		case c >= 'a' && c <= 'z':
+			buf[n] = c - 32 // to upper
+			n++
+		default:
+			buf[n] = c
+			n++
+		}
+		if n == 9 {
+			return string(buf[:9])
+		}
 	}
 
-	m = strings.ToUpper(m)
-
-	if len(m) >= 9 {
-		return m[0:9]
+	switch {
+	case n >= 7:
+		return string(buf[:7])
+	case n >= 6:
+		return string(buf[:6])
+	default:
+		return string(buf[:n])
 	}
-
-	if len(m) >= 7 {
-		return m[0:7]
-	}
-
-	if len(m) >= 6 {
-		return m[0:6]
-	}
-
-	return strings.ToUpper(m)
 }

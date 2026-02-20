@@ -212,6 +212,16 @@ func TestClient_CompanyNameBadResponse(t *testing.T) {
 	assert.True(t, errors.As(err, &e))
 }
 
+func TestClient_CompanyNameInvalidURL(t *testing.T) {
+	client := New()
+	// A null byte in the URL causes http.NewRequestWithContext to fail.
+	_, err := client.getCompanyName("http://\x00invalid")
+	assert.NotNil(t, err)
+
+	var e *HTTPClientError
+	assert.True(t, errors.As(err, &e))
+}
+
 func ExampleClient_CompanyName() {
 	//Prevent rate limits error
 	time.Sleep(time.Millisecond * 550)
@@ -225,7 +235,7 @@ func ExampleClient_CompanyName() {
 	//XEROX CORPORATION
 }
 
-func ExampleClient_CompanyNameNotFound() {
+func ExampleClient_CompanyName_notFound() {
 	//Prevent rate limits error
 	time.Sleep(time.Millisecond * 550)
 
